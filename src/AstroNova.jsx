@@ -677,4 +677,96 @@ export default function AstroNova() {
               unit=" M" format={v => v.toFixed(0)} />
             <Toggle label="Show Disk" paramKey="showDisk" />
             <Toggle label="Doppler / Redshift" paramKey="doppler" note="Cunningham g⁴ intensity law" />
-          </d
+          </div>
+
+          {/* Background */}
+          <div>
+            <SectionHead color={TEAL}>Background Field</SectionHead>
+            <Toggle label="Lensed Starfield" paramKey="showStarfield" note="Full geodesic deflection" />
+          </div>
+
+          {/* Kerr */}
+          <div>
+            <SectionHead color={AMBER}>Kerr Shadow v9</SectionHead>
+            <SliderRow label="Spin a/M" paramKey="spin" min={0} max={0.998} step={0.01}
+              format={v => v.toFixed(3)} />
+            <Toggle label="Show Kerr Overlay" paramKey="showKerrOverlay" note="Bardeen critical curve" />
+            <div style={{
+              padding: '8px 10px', background: BG3, border: '1px solid ' + BG3,
+              borderRadius: '2px', fontSize: '9px', color: TEXTDIM,
+              lineHeight: '1.8', fontFamily: MONO, marginTop: '4px',
+            }}>
+              DISK RENDER: Schwarzschild<br />
+              OVERLAY: Kerr contour only<br />
+              FULL KERR IMAGING: v10 TBD
+            </div>
+          </div>
+
+          {/* Render quality */}
+          <div>
+            <SectionHead color={TEAL}>Render Resolution</SectionHead>
+            <SliderRow label="Resolution" paramKey="resolution" min={120} max={400} step={20}
+              unit="px" format={v => `${v}x${v}`} />
+            <div style={{ fontSize: '9px', color: TEXTDIM, marginTop: '2px', fontFamily: MONO }}>
+              280px approx 10-30s · 400px approx 60s+
+            </div>
+          </div>
+
+          {/* Live physics stats */}
+          {stats && (
+            <div>
+              <SectionHead color={TEAL}>Live Physics</SectionHead>
+              <StatRow label="b_crit"     value={stats.bCrit + ' M'} />
+              <StatRow label="psi_shadow" value={stats.psiShadow + ' deg'} />
+              <StatRow label="r_ISCO"     value={stats.rISCO + ' M'} />
+              <StatRow label="g_min"      value={stats.gMin} color={AMBER} />
+              <StatRow label="g_max"      value={stats.gMax} color={AMBER} />
+              {renderTime && <StatRow label="render_time" value={renderTime + 's'} color={TEXTDIM} />}
+            </div>
+          )}
+
+          {/* Claim boundary */}
+          <div style={{
+            padding: '12px 10px', background: BG3,
+            border: '1px solid ' + BORDER_A,
+            borderRadius: '2px', fontSize: '9px', lineHeight: '1.9', fontFamily: MONO,
+          }}>
+            <div style={{ color: AMBER, marginBottom: '8px', letterSpacing: '0.15em' }}>
+              CLAIM BOUNDARY
+            </div>
+            <div style={{ color: TEAL }}>OK Schwarzschild null geodesics (RK4)</div>
+            <div style={{ color: TEAL }}>OK Cunningham/Luminet g4 intensity</div>
+            <div style={{ color: TEAL }}>OK Bozza log coeff 0.93-0.99</div>
+            <div style={{ color: TEAL }}>OK Bardeen shadow 9.07M vs 9.0M</div>
+            <div style={{ color: TEXTDIM }}>NO Kerr disk imaging (shadow only)</div>
+            <div style={{ color: TEXTDIM }}>NO GRMHD / synchrotron / polarization</div>
+            <div style={{ color: TEXTDIM }}>NO EHT-grade comparison</div>
+          </div>
+        </div>
+      </div>
+
+      <style>{\`
+        @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
+        @keyframes spin { to { transform: rotate(360deg); } }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        input[type=range] {
+          appearance: none; -webkit-appearance: none;
+          height: 2px; border-radius: 1px; background: #0a1220;
+          outline: none; width: 100%;
+        }
+        input[type=range]::-webkit-slider-thumb {
+          appearance: none; -webkit-appearance: none;
+          width: 12px; height: 12px; border-radius: 2px;
+          background: #e8a520; cursor: pointer; border: 1px solid #e8a520;
+        }
+        input[type=range]::-moz-range-thumb {
+          width: 12px; height: 12px; border-radius: 2px;
+          background: #e8a520; cursor: pointer; border: 1px solid #e8a520;
+        }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #040810; }
+        ::-webkit-scrollbar-thumb { background: #0a1220; border-radius: 2px; }
+      \`}</style>
+    </div>
+  );
+}
