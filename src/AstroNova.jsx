@@ -745,7 +745,7 @@ export default function AstroNova() {
         </div>
       </div>
 
-      <style>{\`
+      <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -766,7 +766,7 @@ export default function AstroNova() {
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: #040810; }
         ::-webkit-scrollbar-thumb { background: #0a1220; border-radius: 2px; }
-      \`}</style>
+      `}</style>
     </div>
   );
 }
