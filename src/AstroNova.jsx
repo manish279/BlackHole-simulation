@@ -309,12 +309,56 @@ function kerrShadowPoints(a, thetaObs, nSamples = 300) {
 }
 
 // ============================================================
+// DESIGN TOKENS — Palantir × Nolan/Interstellar
+// ============================================================
+const BG    = '#040810';
+const BG2   = '#070d18';
+const BG3   = '#0a1220';
+const TEAL  = '#00c8e8';
+const AMBER = '#e8a520';
+const TEXT  = '#b8d0e8';
+const TEXTDIM = '#3d5570';
+const BORDER  = 'rgba(0,200,232,0.18)';
+const BORDER_A = 'rgba(232,165,32,0.22)';
+const MONO = "'Space Mono','IBM Plex Mono','Courier New',monospace";
+
+const GRID_BG = {
+  background: BG,
+  backgroundImage: `linear-gradient(${TEAL}08 1px,transparent 1px),linear-gradient(90deg,${TEAL}08 1px,transparent 1px)`,
+  backgroundSize: '48px 48px',
+};
+
+// Shared sub-components
+function SectionHead({ color = AMBER, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+      <div style={{ width: '3px', height: '12px', background: color, flexShrink: 0 }} />
+      <span style={{ fontSize: '9px', color, letterSpacing: '0.22em', textTransform: 'uppercase', fontFamily: MONO }}>
+        {children}
+      </span>
+      <div style={{ flex: 1, height: '1px', background: color === AMBER ? BORDER_A : BORDER }} />
+    </div>
+  );
+}
+
+function StatRow({ label, value, color = TEAL }) {
+  return (
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+      padding: '5px 0', borderBottom: `1px solid ${BG3}`,
+    }}>
+      <span style={{ fontSize: '10px', color: TEXTDIM, fontFamily: MONO, letterSpacing: '0.05em' }}>{label}</span>
+      <span style={{ fontSize: '11px', color, fontFamily: MONO }}>{value}</span>
+    </div>
+  );
+}
+
+// ============================================================
 // UI COMPONENT
 // ============================================================
 export default function AstroNova() {
   const canvasRef = useRef(null);
   const [rendering, setRendering] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [renderTime, setRenderTime] = useState(null);
   const [stats, setStats] = useState(null);
 
@@ -337,7 +381,6 @@ export default function AstroNova() {
     const canvas = canvasRef.current;
     if (!canvas || rendering) return;
     setRendering(true);
-    setProgress(0);
     setRenderTime(null);
 
     const t0 = performance.now();
@@ -356,7 +399,7 @@ export default function AstroNova() {
         showDisk, showStarfield, doppler,
       });
 
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext('2d');
       const imgData = new ImageData(pixels, W, H);
       ctx.putImageData(imgData, 0, 0);
 
@@ -365,12 +408,10 @@ export default function AstroNova() {
         const a = params.spin * M;
         const pts = kerrShadowPoints(a, (thetaObsDeg * Math.PI) / 180);
         const psiShadow = shadowAngularRadius(rObs);
-        const scale = (psiShadow / B_CRIT) * (W / 2) / fov;
         const cx = W / 2, cy = H / 2;
-        ctx.strokeStyle = "rgba(0,255,200,0.7)";
+        ctx.strokeStyle = `${TEAL}b0`;
         ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 3]);
-        // Draw as scatter (no ordering guaranteed)
         ctx.beginPath();
         for (const p of pts) {
           const sx = cx + (p.alpha / B_CRIT) * (W / 2) * (psiShadow / fov) * 0.95;
@@ -400,277 +441,240 @@ export default function AstroNova() {
   const exportPNG = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const link = document.createElement("a");
+    const link = document.createElement('a');
     link.download = `astronova_r${params.rObs}_i${params.thetaObsDeg}_a${params.spin}.png`;
-    link.href = canvas.toDataURL("image/png");
+    link.href = canvas.toDataURL('image/png');
     link.click();
   };
 
+  // Slider row — HUD style
   const SliderRow = ({ label, paramKey, min, max, step, format, unit }) => (
-    <div style={{ marginBottom: "10px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
-        <span style={{ color: "#94a3b8", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase" }}>{label}</span>
-        <span style={{ color: "#e2e8f0", fontSize: "12px", fontFamily: "monospace" }}>
-          {format ? format(params[paramKey]) : params[paramKey]}{unit || ""}
+    <div style={{ marginBottom: '12px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
+        <span style={{ fontSize: '9px', color: TEXTDIM, letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: MONO }}>
+          {label}
+        </span>
+        <span style={{ fontSize: '11px', color: TEAL, fontFamily: MONO }}>
+          {format ? format(params[paramKey]) : params[paramKey]}{unit || ''}
         </span>
       </div>
       <input type="range" min={min} max={max} step={step}
         value={params[paramKey]}
         onChange={e => updateParam(paramKey, parseFloat(e.target.value))}
-        style={{ width: "100%", accentColor: "#38bdf8", cursor: "pointer" }}
+        style={{ width: '100%', cursor: 'pointer' }}
       />
     </div>
   );
 
+  // Square operational toggle
   const Toggle = ({ label, paramKey, note }) => (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      marginBottom: '9px', padding: '6px 8px',
+      background: params[paramKey] ? `${TEAL}0d` : 'transparent',
+      border: `1px solid ${params[paramKey] ? BORDER : BG3}`,
+      borderRadius: '2px', cursor: 'pointer',
+    }} onClick={() => updateParam(paramKey, !params[paramKey])}>
       <div>
-        <span style={{ color: "#94a3b8", fontSize: "11px", letterSpacing: "0.08em", textTransform: "uppercase" }}>{label}</span>
-        {note && <div style={{ color: "#475569", fontSize: "10px" }}>{note}</div>}
+        <span style={{ fontSize: '9px', color: params[paramKey] ? TEXT : TEXTDIM, letterSpacing: '0.15em', textTransform: 'uppercase', fontFamily: MONO }}>
+          {label}
+        </span>
+        {note && <div style={{ fontSize: '9px', color: TEXTDIM, marginTop: '1px', fontFamily: MONO }}>{note}</div>}
       </div>
-      <div onClick={() => updateParam(paramKey, !params[paramKey])}
-        style={{
-          width: "36px", height: "20px", borderRadius: "10px", cursor: "pointer",
-          background: params[paramKey] ? "#0ea5e9" : "#334155",
-          position: "relative", transition: "background 0.2s"
-        }}>
-        <div style={{
-          position: "absolute", top: "3px",
-          left: params[paramKey] ? "19px" : "3px",
-          width: "14px", height: "14px", borderRadius: "50%",
-          background: "white", transition: "left 0.2s"
-        }} />
-      </div>
+      {/* Square LED indicator */}
+      <div style={{
+        width: '14px', height: '14px', borderRadius: '2px', flexShrink: 0,
+        background: params[paramKey] ? TEAL : BG3,
+        border: `1px solid ${params[paramKey] ? TEAL : TEXTDIM}`,
+        boxShadow: params[paramKey] ? `0 0 6px ${TEAL}80` : 'none',
+        transition: 'all 0.15s',
+      }} />
     </div>
   );
 
   return (
     <div style={{
-      minHeight: "100vh", background: "#030712",
-      fontFamily: "'DM Mono', 'Fira Code', monospace",
-      color: "#e2e8f0", display: "flex", flexDirection: "column"
+      minHeight: '100vh', ...GRID_BG,
+      fontFamily: MONO,
+      color: TEXT, display: 'flex', flexDirection: 'column',
     }}>
-      {/* Header */}
+
+      {/* ── HEADER ── */}
       <div style={{
-        borderBottom: "1px solid #0f172a",
-        padding: "16px 24px",
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        background: "rgba(15,23,42,0.8)", backdropFilter: "blur(8px)",
-        position: "sticky", top: 0, zIndex: 10
+        borderBottom: `1px solid ${BORDER}`,
+        padding: '0 24px',
+        display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
+        background: `${BG2}e0`, backdropFilter: 'blur(10px)',
+        position: 'sticky', top: 0, zIndex: 10, height: '52px',
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+        {/* Left — branding */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          {/* Amber accent bar */}
+          <div style={{ width: '3px', height: '32px', background: `linear-gradient(${AMBER},${TEAL})` }} />
+          {/* Black hole icon */}
           <div style={{
-            width: "32px", height: "32px", borderRadius: "50%",
-            background: "radial-gradient(circle at 35% 35%, #1e3a5f, #000)",
-            boxShadow: "0 0 20px rgba(56,189,248,0.3), inset 0 0 12px rgba(0,0,0,0.8)",
-            border: "1px solid rgba(56,189,248,0.2)"
+            width: '30px', height: '30px', borderRadius: '50%',
+            background: `radial-gradient(circle at 38% 38%, #0a1e3a 30%, #000 100%)`,
+            boxShadow: `0 0 18px ${TEAL}50, 0 0 6px ${AMBER}30`,
+            border: `1px solid ${BORDER}`,
           }} />
           <div>
-            <div style={{ fontSize: "15px", fontWeight: "600", letterSpacing: "0.12em", color: "#f1f5f9" }}>
+            <div style={{ fontSize: '13px', fontWeight: '700', letterSpacing: '0.2em', color: '#e8f4ff', fontFamily: MONO }}>
               ASTRONOVA
             </div>
-            <div style={{ fontSize: "10px", color: "#475569", letterSpacing: "0.15em" }}>
-              SCHWARZSCHILD · THIN DISK · KERR SHADOW
+            <div style={{ fontSize: '9px', color: TEXTDIM, letterSpacing: '0.18em', fontFamily: MONO }}>
+              GEODESIC · ENGINE · v9
             </div>
           </div>
+          {/* Separator */}
+          <div style={{ width: '1px', height: '28px', background: BORDER, marginLeft: '8px' }} />
+          <div style={{ fontSize: '9px', color: AMBER, letterSpacing: '0.15em', fontFamily: MONO }}>
+            SCHWARZSCHILD · THIN DISK · KERR SHADOW
+          </div>
         </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+
+        {/* Right — controls */}
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
           {renderTime && (
-            <span style={{ fontSize: "11px", color: "#475569" }}>
+            <div style={{
+              padding: '4px 10px', background: BG3, border: `1px solid ${BORDER}`,
+              borderRadius: '2px', fontSize: '10px', color: TEAL, fontFamily: MONO,
+            }}>
               {renderTime}s
-            </span>
+            </div>
           )}
           <button onClick={exportPNG} style={{
-            background: "transparent", border: "1px solid #1e3a5f",
-            color: "#38bdf8", padding: "6px 14px", borderRadius: "4px",
-            cursor: "pointer", fontSize: "11px", letterSpacing: "0.08em"
-          }}>EXPORT PNG</button>
+            background: 'transparent', border: `1px solid ${BORDER}`,
+            color: TEXTDIM, padding: '6px 14px', borderRadius: '2px',
+            cursor: 'pointer', fontSize: '9px', letterSpacing: '0.15em',
+            fontFamily: MONO, transition: 'color 0.15s, border-color 0.15s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.color = TEAL; e.currentTarget.style.borderColor = TEAL; }}
+            onMouseLeave={e => { e.currentTarget.style.color = TEXTDIM; e.currentTarget.style.borderColor = BORDER; }}
+          >
+            EXPORT PNG
+          </button>
           <button onClick={doRender} disabled={rendering} style={{
-            background: rendering ? "#0f172a" : "#0ea5e9",
-            border: "none", color: rendering ? "#475569" : "#030712",
-            padding: "6px 18px", borderRadius: "4px",
-            cursor: rendering ? "not-allowed" : "pointer",
-            fontSize: "11px", letterSpacing: "0.08em", fontWeight: "700",
-            fontFamily: "inherit"
+            background: rendering ? BG3 : AMBER,
+            border: `1px solid ${rendering ? TEXTDIM : AMBER}`,
+            color: rendering ? TEXTDIM : '#000',
+            padding: '6px 20px', borderRadius: '2px',
+            cursor: rendering ? 'not-allowed' : 'pointer',
+            fontSize: '9px', letterSpacing: '0.2em', fontWeight: '700',
+            fontFamily: MONO,
+            boxShadow: rendering ? 'none' : `0 0 14px ${AMBER}50`,
+            transition: 'all 0.15s',
           }}>
-            {rendering ? "RENDERING..." : "RENDER"}
+            {rendering ? 'INTEGRATING...' : '▶  RENDER'}
           </button>
         </div>
       </div>
 
-      {/* Main */}
-      <div style={{ display: "flex", flex: 1, gap: 0 }}>
+      {/* ── MAIN ── */}
+      <div style={{ display: 'flex', flex: 1, gap: 0 }}>
 
         {/* Canvas area */}
         <div style={{
-          flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-          padding: "32px", position: "relative", minHeight: "500px"
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '32px', position: 'relative', minHeight: '500px',
         }}>
-          <div style={{ position: "relative" }}>
+          <div style={{ position: 'relative' }}>
+            {/* Render overlay */}
             {rendering && (
               <div style={{
-                position: "absolute", inset: 0, display: "flex", alignItems: "center",
-                justifyContent: "center", background: "rgba(3,7,18,0.7)",
-                zIndex: 2, borderRadius: "4px", flexDirection: "column", gap: "12px"
+                position: 'absolute', inset: 0, display: 'flex', alignItems: 'center',
+                justifyContent: 'center', background: `${BG}cc`,
+                zIndex: 2, borderRadius: '2px', flexDirection: 'column', gap: '14px',
               }}>
+                {/* Teal spinner ring */}
                 <div style={{
-                  width: "40px", height: "40px", borderRadius: "50%",
-                  border: "2px solid #0f172a", borderTopColor: "#38bdf8",
-                  animation: "spin 0.8s linear infinite"
+                  width: '44px', height: '44px', borderRadius: '50%',
+                  border: `2px solid ${BG3}`, borderTopColor: TEAL,
+                  animation: 'spin 0.9s linear infinite',
                 }} />
-                <span style={{ fontSize: "11px", color: "#475569", letterSpacing: "0.12em" }}>
+                <div style={{ fontSize: '9px', color: TEAL, letterSpacing: '0.22em', fontFamily: MONO }}>
                   INTEGRATING GEODESICS
-                </span>
+                </div>
+                <div style={{ fontSize: '9px', color: TEXTDIM, letterSpacing: '0.12em', fontFamily: MONO }}>
+                  RK4 · NULL GEODESIC · SCHWARZSCHILD
+                </div>
               </div>
             )}
+
+            {/* Canvas with teal glow border */}
             <canvas ref={canvasRef}
               style={{
-                imageRendering: "pixelated",
-                display: "block",
-                maxWidth: "min(500px, 100%)",
-                maxHeight: "min(500px, 80vh)",
-                width: "100%", height: "auto",
-                border: "1px solid #0f172a",
-                boxShadow: "0 0 60px rgba(56,189,248,0.05), 0 0 120px rgba(0,0,0,0.8)"
+                imageRendering: 'pixelated',
+                display: 'block',
+                maxWidth: 'min(520px, 100%)',
+                maxHeight: 'min(520px, 80vh)',
+                width: '100%', height: 'auto',
+                border: `1px solid ${BORDER}`,
+                boxShadow: `0 0 60px ${TEAL}12, 0 0 120px #000c`,
+                borderRadius: '2px',
               }}
             />
+
+            {/* Corner reticles */}
+            {['top:0;left:0', 'top:0;right:0', 'bottom:0;left:0', 'bottom:0;right:0'].map((pos, i) => {
+              const s = Object.fromEntries(pos.split(';').map(x => x.split(':')));
+              const bR = i === 0 ? '0 0 4px 0' : i === 1 ? '0 0 0 4px' : i === 2 ? '4px 0 0 0' : '0 4px 0 0';
+              return (
+                <div key={i} style={{
+                  position: 'absolute', ...s,
+                  width: '12px', height: '12px',
+                  borderTop: i < 2 ? `1px solid ${TEAL}` : 'none',
+                  borderBottom: i >= 2 ? `1px solid ${TEAL}` : 'none',
+                  borderLeft: (i === 0 || i === 2) ? `1px solid ${TEAL}` : 'none',
+                  borderRight: (i === 1 || i === 3) ? `1px solid ${TEAL}` : 'none',
+                  borderRadius: bR, pointerEvents: 'none',
+                }} />
+              );
+            })}
           </div>
 
-          {/* Claim boundary badge */}
+          {/* Status strip below canvas */}
           <div style={{
-            position: "absolute", bottom: "16px", left: "50%", transform: "translateX(-50%)",
-            background: "rgba(15,23,42,0.9)", border: "1px solid #1e3a5f",
-            borderRadius: "4px", padding: "6px 14px",
-            fontSize: "10px", color: "#475569", letterSpacing: "0.1em",
-            whiteSpace: "nowrap"
+            position: 'absolute', bottom: '14px', left: '50%', transform: 'translateX(-50%)',
+            background: `${BG2}e0`, border: `1px solid ${BORDER}`,
+            borderRadius: '2px', padding: '5px 16px',
+            fontSize: '9px', color: TEXTDIM, letterSpacing: '0.13em',
+            whiteSpace: 'nowrap', fontFamily: MONO,
+            display: 'flex', alignItems: 'center', gap: '12px',
           }}>
-            SCHWARZSCHILD NULL GEODESICS · CUNNINGHAM g⁴ TRANSFER · VALIDATED
+            <span style={{ color: TEAL, fontSize: '8px' }}>●</span>
+            SCHWARZSCHILD NULL GEODESICS
+            <span style={{ color: BORDER }}>|</span>
+            CUNNINGHAM g⁴ TRANSFER
+            <span style={{ color: BORDER }}>|</span>
+            VALIDATED
           </div>
         </div>
 
-        {/* Controls */}
+        {/* ── CONTROLS PANEL ── */}
         <div style={{
-          width: "280px", borderLeft: "1px solid #0f172a",
-          background: "rgba(15,23,42,0.4)",
-          padding: "20px", overflowY: "auto",
-          display: "flex", flexDirection: "column", gap: "20px"
+          width: '288px', borderLeft: `1px solid ${BORDER}`,
+          background: `${BG2}cc`,
+          padding: '20px 16px', overflowY: 'auto',
+          display: 'flex', flexDirection: 'column', gap: '22px',
         }}>
 
-          {/* Geometry */}
+          {/* Observer */}
           <div>
-            <div style={{ fontSize: "10px", color: "#0ea5e9", letterSpacing: "0.2em", marginBottom: "14px", textTransform: "uppercase" }}>
-              — Observer
-            </div>
-            <SliderRow label="Distance" paramKey="rObs" min={10} max={80} step={1}
+            <SectionHead color={TEAL}>Observer Geometry</SectionHead>
+            <SliderRow label="Distance r_obs" paramKey="rObs" min={10} max={80} step={1}
               unit=" M" format={v => v.toFixed(0)} />
-            <SliderRow label="Inclination" paramKey="thetaObsDeg" min={5} max={90} step={1}
+            <SliderRow label="Inclination θ" paramKey="thetaObsDeg" min={5} max={90} step={1}
               unit="°" format={v => v.toFixed(0)} />
             <SliderRow label="Field of View" paramKey="fov" min={0.15} max={0.8} step={0.01}
               format={v => v.toFixed(2)} unit=" rad" />
           </div>
 
-          {/* Disk */}
+          {/* Accretion Disk */}
           <div>
-            <div style={{ fontSize: "10px", color: "#0ea5e9", letterSpacing: "0.2em", marginBottom: "14px" }}>
-              — Accretion Disk
-            </div>
-            <SliderRow label="Outer Radius" paramKey="rDiskOuter" min={8} max={40} step={1}
+            <SectionHead color={AMBER}>Accretion Disk</SectionHead>
+            <SliderRow label="Outer Radius r_out" paramKey="rDiskOuter" min={8} max={40} step={1}
               unit=" M" format={v => v.toFixed(0)} />
             <Toggle label="Show Disk" paramKey="showDisk" />
             <Toggle label="Doppler / Redshift" paramKey="doppler" note="Cunningham g⁴ intensity law" />
-          </div>
-
-          {/* Starfield */}
-          <div>
-            <div style={{ fontSize: "10px", color: "#0ea5e9", letterSpacing: "0.2em", marginBottom: "14px" }}>
-              — Background
-            </div>
-            <Toggle label="Lensed Starfield" paramKey="showStarfield" note="Full geodesic deflection" />
-          </div>
-
-          {/* Kerr */}
-          <div>
-            <div style={{ fontSize: "10px", color: "#0ea5e9", letterSpacing: "0.2em", marginBottom: "14px" }}>
-              — Kerr Shadow (v9 analytics)
-            </div>
-            <SliderRow label="Spin a/M" paramKey="spin" min={0} max={0.998} step={0.01}
-              format={v => v.toFixed(3)} />
-            <Toggle label="Show Kerr Overlay" paramKey="showKerrOverlay"
-              note="Bardeen critical curve" />
-            <div style={{
-              fontSize: "10px", color: "#334155", marginTop: "6px",
-              padding: "8px", background: "rgba(3,7,18,0.5)", borderRadius: "4px",
-              lineHeight: "1.6"
-            }}>
-              Disk render: Schwarzschild.<br />
-              Overlay: Kerr contour only.<br />
-              Full Kerr imaging: v10 (TBD).
-            </div>
-          </div>
-
-          {/* Render quality */}
-          <div>
-            <div style={{ fontSize: "10px", color: "#0ea5e9", letterSpacing: "0.2em", marginBottom: "14px" }}>
-              — Render Quality
-            </div>
-            <SliderRow label="Resolution" paramKey="resolution" min={120} max={400} step={20}
-              unit="px" format={v => `${v}×${v}`} />
-            <div style={{ fontSize: "10px", color: "#334155", marginTop: "4px" }}>
-              Higher res = slower. 280px ≈ 10–30s.
-            </div>
-          </div>
-
-          {/* Stats */}
-          {stats && (
-            <div>
-              <div style={{ fontSize: "10px", color: "#0ea5e9", letterSpacing: "0.2em", marginBottom: "10px" }}>
-                — Live Physics
-              </div>
-              {[
-                ["b_crit", `${stats.bCrit} M`],
-                ["ψ_shadow", `${stats.psiShadow}°`],
-                ["r_ISCO", `${stats.rISCO} M`],
-              ].map(([k, v]) => (
-                <div key={k} style={{
-                  display: "flex", justifyContent: "space-between",
-                  fontSize: "11px", padding: "4px 0",
-                  borderBottom: "1px solid #0f172a", marginBottom: "2px"
-                }}>
-                  <span style={{ color: "#475569" }}>{k}</span>
-                  <span style={{ color: "#7dd3fc", fontFamily: "monospace" }}>{v}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Claim boundary */}
-          <div style={{
-            padding: "12px", background: "rgba(3,7,18,0.6)",
-            border: "1px solid #0f172a", borderRadius: "4px",
-            fontSize: "10px", color: "#334155", lineHeight: "1.7"
-          }}>
-            <div style={{ color: "#475569", marginBottom: "6px", letterSpacing: "0.1em" }}>CLAIM BOUNDARY</div>
-            ✓ Schwarzschild null geodesics (RK4)<br />
-            ✓ Cunningham/Luminet g⁴ disk intensity<br />
-            ✓ Bozza log coefficient validated (0.93–0.99)<br />
-            ✓ Bardeen shadow width: 9.07M vs 9.0M<br />
-            ✗ Kerr imaging (shadow only)<br />
-            ✗ GRMHD / synchrotron / polarization<br />
-            ✗ EHT-grade comparison
-          </div>
-        </div>
-      </div>
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        input[type=range] { appearance: none; height: 3px; border-radius: 2px; background: #0f172a; outline: none; }
-        input[type=range]::-webkit-slider-thumb { appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #38bdf8; cursor: pointer; }
-        input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: #38bdf8; cursor: pointer; border: none; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #030712; }
-        ::-webkit-scrollbar-thumb { background: #0f172a; }
-      `}</style>
-    </div>
-  );
-}
+          </d
